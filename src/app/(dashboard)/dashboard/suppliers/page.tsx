@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { OPT_PRODUCTS } from '@/features/catalog/catalog.data';
+import { useLiveCatalog } from '@/features/catalog/useLiveCatalog';
 import { importProductFromSupplierUrl } from '@/features/suppliers/supplierAdapter';
 import {
   calculateOfferMargin,
@@ -38,7 +38,6 @@ const PRIVATE_SUPPLIER_OFFERS: SupplierOfferRecord[] = [
     stockStatus: 'IN_STOCK',
     isPrimary: true,
     lastCheckedAt: '2026-10-31',
-    internalNotes: 'Ships in plain brown corrugated box with zero branding.',
   },
   {
     id: 'offer-002-primary',
@@ -163,14 +162,16 @@ const TREND_RECOMMENDATION_CANDIDATES: TrendRecommendationCandidate[] = [
 ];
 
 export default function SuppliersAndProductImporterPage() {
-  const [catalogList, setCatalogList] = useState<PublicProductItem[]>(
-    OPT_PRODUCTS as PublicProductItem[]
-  );
+  const {
+    products: catalogList,
+    publishProductEverywhere,
+    updateProductStockEverywhere,
+  } = useLiveCatalog();
+
   const [recommendations, setRecommendations] = useState<TrendRecommendationCandidate[]>(
     TREND_RECOMMENDATION_CANDIDATES
   );
 
-  // Paste Supplier URL Importer State
   const [supplierUrl, setSupplierUrl] = useState<string>('');
   const [customTitle, setCustomTitle] = useState<string>('');
   const [division, setDivision] = useState<ProductDivision>('DESK');
@@ -178,7 +179,7 @@ export default function SuppliersAndProductImporterPage() {
   const [sellingPrice, setSellingPrice] = useState<number>(599);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
 
-  function handleApproveRecommendation(rec: TrendRecommendationCandidate) {
+  async function handleApproveRecommendation(rec: TrendRecommendationCandidate) {
     const imported = importProductFromSupplierUrl(rec.fulfillmentSupplierUrl, {
       title: rec.title,
       division: rec.suggestedDivision,
@@ -190,18 +191,19 @@ export default function SuppliersAndProductImporterPage() {
     imported.product.publicationStatus = 'PUBLISHED';
     imported.product.specs = rec.specs;
 
-    setCatalogList((prev: PublicProductItem[]) => [imported.product, ...prev]);
+    await publishProductEverywhere(imported.product);
+
     setRecommendations((prev: TrendRecommendationCandidate[]) =>
       prev.map((item: TrendRecommendationCandidate) =>
         item.id === rec.id ? { ...item, status: 'APPROVED_PUBLISHED' } : item
       )
     );
     setImportFeedback(
-      `✓ "${rec.title}" (${imported.product.sku}) approved & published to Storefront, ${rec.suggestedDivision} Category, and Meta/WhatsApp Catalog Feed!`
+      `✓ "${rec.title}" (${imported.product.sku}) approved & published LIVE across Storefront, ${rec.suggestedDivision} Category, and Meta/WhatsApp Catalog Feed!`
     );
   }
 
-  function handleUrlImportAndPublish(e: React.FormEvent) {
+  async function handleUrlImportAndPublish(e: React.FormEvent) {
     e.preventDefault();
     if (!supplierUrl.trim()) return;
 
@@ -213,25 +215,22 @@ export default function SuppliersAndProductImporterPage() {
     });
     draft.product.publicationStatus = 'PUBLISHED';
 
-    setCatalogList((prev: PublicProductItem[]) => [draft.product, ...prev]);
+    await publishProductEverywhere(draft.product);
+
     setImportFeedback(
-      `✓ Imported via [${draft.adapterDetected}] & Published ${draft.product.sku} (${draft.product.title}) across Storefront & Meta Catalog!`
+      `✓ Imported via [${draft.adapterDetected}] & Published ${draft.product.sku} (${draft.product.title}) LIVE across Storefront & Meta Catalog!`
     );
     setSupplierUrl('');
     setCustomTitle('');
   }
 
-  function handleStockStateChange(sku: string, newStatus: StockRetentionStatus) {
-    setCatalogList((prev: PublicProductItem[]) =>
-      prev.map((p: PublicProductItem) =>
-        p.sku === sku
-          ? {
-              ...p,
-              stockStatus: newStatus,
-              inStock: newStatus === 'IN_STOCK' || newStatus === 'LOW_STOCK',
-            }
-          : p
-      )
+  async function handleStockStateChange(
+    sku: string,
+    newStatus: StockRetentionStatus
+  ) {
+    await updateProductStockEverywhere(sku, newStatus);
+    setImportFeedback(
+      `✓ Updated ${sku} stock state to ${newStatus} across Storefront & Meta Feed.`
     );
   }
 
@@ -245,7 +244,6 @@ export default function SuppliersAndProductImporterPage() {
         </div>
       )}
 
-      {/* Section 1: 1-Click Trend Recommendations Inbox (Approve Once -> Added Everywhere) */}
       <GlassCard className="p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-theme-border pb-3">
           <div>
@@ -254,7 +252,7 @@ export default function SuppliersAndProductImporterPage() {
               Trend Discovery Recommendations Inbox (Hothaat / Baapstore / DeoDap / Meesho)
             </span>
             <p className="text-xs text-theme-muted mt-0.5">
-              Click <strong>Approve &amp; Publish Everywhere</strong> to automatically add any candidate to your Storefront, Division Page, and Instagram/Facebook/WhatsApp Catalog Feed.
+              Click <strong>Approve &amp; Publish Everywhere</strong> to automatically push any candidate live to your Storefront, Division Page, and Instagram/Facebook/WhatsApp Catalog Feed.
             </p>
           </div>
           <a
@@ -328,7 +326,6 @@ export default function SuppliersAndProductImporterPage() {
         </div>
       </GlassCard>
 
-      {/* Section 2: Paste Supplier URL Importer (Add Product -> Paste URL -> Preview -> Publish) */}
       <GlassCard className="p-6 space-y-4">
         <h2 className="font-mono text-xs font-bold uppercase text-theme-accent flex items-center gap-1.5">
           <PlusCircle className="h-4 w-4" />
@@ -403,7 +400,6 @@ export default function SuppliersAndProductImporterPage() {
         </form>
       </GlassCard>
 
-      {/* Section 3: Active Catalog & Retention Stock State Controller */}
       <GlassCard className="p-6 overflow-x-auto">
         <h2 className="mb-4 font-mono text-xs font-bold uppercase text-theme-accent">
           Live Catalog &amp; Retention Stock State Manager ({catalogList.length} SKUs)

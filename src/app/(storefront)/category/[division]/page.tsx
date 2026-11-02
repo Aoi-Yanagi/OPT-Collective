@@ -2,61 +2,82 @@
 
 import React, { useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { getProductsByDivision } from '@/features/catalog/catalog.data';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { useLiveCatalog } from '@/features/catalog/useLiveCatalog';
+import { PublicProductItem } from '@/types/public-catalog.types';
 import { ProductCard } from '@/features/catalog/ProductCard';
-import { useStoreCart } from '@/features/catalog/StorefrontShell';
 import { useOptTheme } from '@/features/theme-engine/ThemeContext';
+import { useStoreCart } from '@/features/catalog/StorefrontShell';
 import { DivisionKey } from '@/types/theme.types';
 
 const DIVISION_META: Record<string, { title: string; subtitle: string }> = {
-  DESK: {
-    title: 'O.P.T. // DESK — Ergonomic WFH & Study Gear',
-    subtitle: 'CNC aluminum risers, 55D coccyx support, and mechanical switch detailing tools.',
+  desk: {
+    title: 'O.P.T. // DESK DIVISION',
+    subtitle:
+      'CNC Aluminum Stands, 55D Memory Foam Cushions & Mechanical Detailing Gear.',
   },
-  DRIVE: {
-    title: 'O.P.T. // DRIVE — Car Cabin & Detailing',
-    subtitle: 'Zero-rattle console organizers and high-pile microfiber dusters for Indian roads.',
+  drive: {
+    title: 'O.P.T. // DRIVE DIVISION',
+    subtitle:
+      'Zero-Rattle Car Seat Organizers, Microfiber Exterior Dusters & Cabin Tools.',
   },
-  VAULT: {
-    title: 'O.P.T. // FESTIVE VAULT — Limited Bundles',
-    subtitle: 'Pre-Diwali Safai makeovers and high-value gifting combos.',
+  vault: {
+    title: 'O.P.T. // FESTIVE VAULT',
+    subtitle:
+      'High-Value Seasonal Combos & Executive Desk Makeover Bundles.',
   },
 };
 
 export default function CategoryDivisionPage() {
   const params = useParams<{ division: string }>();
-  const rawDivision = (params?.division || 'desk').toUpperCase() as DivisionKey;
-  const { addToCart } = useStoreCart();
+  const divisionSlug = (params?.division || 'desk').toLowerCase();
   const { selectDivisionWithTheme } = useOptTheme();
+  const { addToCart } = useStoreCart();
+  const { products } = useLiveCatalog();
 
   useEffect(() => {
-    if (['DESK', 'DRIVE', 'VAULT'].includes(rawDivision)) {
-      selectDivisionWithTheme(rawDivision);
+    const upper = divisionSlug.toUpperCase() as DivisionKey;
+    if (upper === 'DESK' || upper === 'DRIVE' || upper === 'VAULT') {
+      selectDivisionWithTheme(upper);
     }
-  }, [rawDivision]);
+  }, [divisionSlug, selectDivisionWithTheme]);
 
-  const products = getProductsByDivision(rawDivision);
-  const meta = DIVISION_META[rawDivision] || DIVISION_META.DESK;
+  const divisionProducts: PublicProductItem[] = products.filter(
+    (p: PublicProductItem) =>
+      p.publicationStatus === 'PUBLISHED' &&
+      p.division.toLowerCase() === divisionSlug
+  );
+
+  const meta = DIVISION_META[divisionSlug] || DIVISION_META.desk;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-      <div className="opt-glass mb-8 p-6 sm:p-8">
-        <span className="font-mono text-xs uppercase tracking-widest text-theme-accent">
-          DIVISION ARCHIVE // {rawDivision}
-        </span>
-        <h1 className="mt-2 text-2xl font-extrabold text-theme-text sm:text-3xl">
-          {meta.title}
-        </h1>
-        <p className="mt-2 max-w-2xl text-xs sm:text-sm text-theme-muted">
-          {meta.subtitle}
-        </p>
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 space-y-8">
+      <div>
+        <Link
+          href="/"
+          onClick={() => selectDivisionWithTheme('ALL')}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-theme-muted hover:text-theme-accent"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back to All Divisions</span>
+        </Link>
+
+        <h1 className="mt-3 text-3xl font-extrabold text-theme-text">{meta.title}</h1>
+        <p className="mt-1 text-sm text-theme-muted">{meta.subtitle}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
+        {divisionProducts.map((product: PublicProductItem) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onAddToCart={(item: PublicProductItem, variantName?: string) =>
+              addToCart(item, variantName)
+            }
+          />
         ))}
       </div>
-    </section>
+    </div>
   );
 }
