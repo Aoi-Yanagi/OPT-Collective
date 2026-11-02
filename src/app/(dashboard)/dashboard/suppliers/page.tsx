@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useLiveCatalog } from '@/features/catalog/useLiveCatalog';
 import { importProductFromSupplierUrl } from '@/features/suppliers/supplierAdapter';
+import { generateDualModeArticlesForProduct } from '@/features/guides/guides.data';
 import {
   calculateOfferMargin,
   TrendRecommendationCandidate,
@@ -21,6 +22,9 @@ import {
   PlusCircle,
   ExternalLink,
   Share2,
+  FileText,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 const PRIVATE_SUPPLIER_OFFERS: SupplierOfferRecord[] = [
@@ -37,7 +41,7 @@ const PRIVATE_SUPPLIER_OFFERS: SupplierOfferRecord[] = [
     currency: 'INR',
     stockStatus: 'IN_STOCK',
     isPrimary: true,
-    lastCheckedAt: '2026-10-31',
+    lastCheckedAt: '2026-11-02',
   },
   {
     id: 'offer-002-primary',
@@ -52,7 +56,7 @@ const PRIVATE_SUPPLIER_OFFERS: SupplierOfferRecord[] = [
     currency: 'INR',
     stockStatus: 'IN_STOCK',
     isPrimary: true,
-    lastCheckedAt: '2026-10-31',
+    lastCheckedAt: '2026-11-02',
   },
   {
     id: 'offer-003-primary',
@@ -67,7 +71,7 @@ const PRIVATE_SUPPLIER_OFFERS: SupplierOfferRecord[] = [
     currency: 'INR',
     stockStatus: 'LOW_STOCK',
     isPrimary: true,
-    lastCheckedAt: '2026-10-31',
+    lastCheckedAt: '2026-11-02',
   },
   {
     id: 'offer-004-primary',
@@ -82,7 +86,7 @@ const PRIVATE_SUPPLIER_OFFERS: SupplierOfferRecord[] = [
     currency: 'INR',
     stockStatus: 'IN_STOCK',
     isPrimary: true,
-    lastCheckedAt: '2026-10-31',
+    lastCheckedAt: '2026-11-02',
   },
   {
     id: 'offer-005-primary',
@@ -97,7 +101,7 @@ const PRIVATE_SUPPLIER_OFFERS: SupplierOfferRecord[] = [
     currency: 'INR',
     stockStatus: 'RESTOCKING_SOON',
     isPrimary: true,
-    lastCheckedAt: '2026-10-31',
+    lastCheckedAt: '2026-11-02',
   },
   {
     id: 'offer-006-primary',
@@ -112,7 +116,7 @@ const PRIVATE_SUPPLIER_OFFERS: SupplierOfferRecord[] = [
     currency: 'INR',
     stockStatus: 'IN_STOCK',
     isPrimary: true,
-    lastCheckedAt: '2026-10-31',
+    lastCheckedAt: '2026-11-02',
   },
 ];
 
@@ -136,7 +140,7 @@ const TREND_RECOMMENDATION_CANDIDATES: TrendRecommendationCandidate[] = [
     ],
     demandScore: 94,
     status: 'PENDING_REVIEW',
-    detectedAt: '2026-10-31',
+    detectedAt: '2026-11-02',
   },
   {
     id: 'rec-trend-02',
@@ -157,7 +161,28 @@ const TREND_RECOMMENDATION_CANDIDATES: TrendRecommendationCandidate[] = [
     ],
     demandScore: 89,
     status: 'PENDING_REVIEW',
-    detectedAt: '2026-10-31',
+    detectedAt: '2026-11-02',
+  },
+  {
+    id: 'rec-trend-03',
+    title: 'USB-C Rechargeable Mini Bag Sealer & Thermal Cutter (Impulse Kitchen Winner)',
+    suggestedDivision: 'VAULT',
+    trendSourceName: 'DeoDap Viral Impulse #1',
+    sourceReferenceUrl: 'https://deodap.in',
+    fulfillmentSupplierName: 'DeoDap Wholesale',
+    fulfillmentSupplierUrl: 'https://deodap.in/search?q=mini+bag+sealer',
+    estimatedSupplierCostInr: 95,
+    suggestedRetailPriceInr: 399,
+    image:
+      'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=900&q=80',
+    specs: [
+      'Instant 1-Second Thermal Airtight Seal',
+      'Magnetic Fridge-Mount Backside',
+      'USB-C Rechargeable Battery',
+    ],
+    demandScore: 96,
+    status: 'PENDING_REVIEW',
+    detectedAt: '2026-11-02',
   },
 ];
 
@@ -178,6 +203,7 @@ export default function SuppliersAndProductImporterPage() {
   const [supplierCost, setSupplierCost] = useState<number>(180);
   const [sellingPrice, setSellingPrice] = useState<number>(599);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const [copiedArticleKey, setCopiedArticleKey] = useState<string | null>(null);
 
   async function handleApproveRecommendation(rec: TrendRecommendationCandidate) {
     const imported = importProductFromSupplierUrl(rec.fulfillmentSupplierUrl, {
@@ -234,6 +260,31 @@ export default function SuppliersAndProductImporterPage() {
     );
   }
 
+  function handleCopyArticleDraft(
+    prod: PublicProductItem,
+    mode: 'DIRECT_ADSENSE' | 'SUBTLE_TROJAN'
+  ) {
+    const generated = generateDualModeArticlesForProduct({
+      title: prod.title,
+      sku: prod.sku,
+      slug: prod.slug,
+      division: prod.division,
+      priceInr: prod.price,
+      compareAtPriceInr: prod.compareAtPrice,
+      specs: prod.specs,
+    });
+
+    const textToCopy =
+      mode === 'DIRECT_ADSENSE'
+        ? generated.directBloggerDraft
+        : generated.subtleEducationalDraft;
+
+    navigator.clipboard.writeText(textToCopy);
+    const key = `${prod.sku}-${mode}`;
+    setCopiedArticleKey(key);
+    setTimeout(() => setCopiedArticleKey(null), 2200);
+  }
+
   const liveMarginPreview = calculateOfferMargin(sellingPrice, supplierCost);
 
   return (
@@ -244,15 +295,16 @@ export default function SuppliersAndProductImporterPage() {
         </div>
       )}
 
+      {/* Section 1: 1-Click Viral & Trend Recommendations Inbox */}
       <GlassCard className="p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-theme-border pb-3">
           <div>
             <span className="font-mono text-xs font-bold uppercase text-theme-accent flex items-center gap-1.5">
               <Sparkles className="h-4 w-4" />
-              Trend Discovery Recommendations Inbox (Hothaat / Baapstore / DeoDap / Meesho)
+              Viral &amp; Impulse Trend Scout Inbox (Hothaat / Baapstore / DeoDap / Meesho)
             </span>
             <p className="text-xs text-theme-muted mt-0.5">
-              Click <strong>Approve &amp; Publish Everywhere</strong> to automatically push any candidate live to your Storefront, Division Page, and Instagram/Facebook/WhatsApp Catalog Feed.
+              Click <strong>Approve &amp; Publish Everywhere</strong> to automatically push any viral winner live to your Storefront, Division Page, and Instagram/Facebook/WhatsApp Catalog Feed.
             </p>
           </div>
           <a
@@ -266,7 +318,7 @@ export default function SuppliersAndProductImporterPage() {
           </a>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {recommendations.map((rec: TrendRecommendationCandidate) => {
             const margin = calculateOfferMargin(
               rec.suggestedRetailPriceInr,
@@ -281,12 +333,12 @@ export default function SuppliersAndProductImporterPage() {
                   <div className="flex items-center justify-between font-mono text-[10px]">
                     <span className="text-theme-accent font-bold">{rec.trendSourceName}</span>
                     <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-300 font-bold">
-                      Demand Score: {rec.demandScore}/100
+                      Score: {rec.demandScore}/100
                     </span>
                   </div>
                   <h3 className="mt-1.5 text-sm font-bold text-theme-text">{rec.title}</h3>
                   <p className="mt-1 font-mono text-[11px] text-theme-muted">
-                    Fulfillment: {rec.fulfillmentSupplierName} • Cost: ₹{rec.estimatedSupplierCostInr} → Retail: ₹{rec.suggestedRetailPriceInr}{' '}
+                    Cost: ₹{rec.estimatedSupplierCostInr} → Retail: ₹{rec.suggestedRetailPriceInr}{' '}
                     <strong className="text-emerald-400">
                       (+₹{margin.estimatedMarginInr} / {margin.marginPercentage}% Profit)
                     </strong>
@@ -300,14 +352,14 @@ export default function SuppliersAndProductImporterPage() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-[11px] text-theme-muted hover:text-theme-text"
                   >
-                    <span>Inspect Supplier</span>
+                    <span>Supplier</span>
                     <ExternalLink className="h-3 w-3" />
                   </a>
 
                   {rec.status === 'APPROVED_PUBLISHED' ? (
                     <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-emerald-400">
                       <CheckCircle2 className="h-4 w-4" />
-                      Published Everywhere ✓
+                      Live ✓
                     </span>
                   ) : (
                     <Button
@@ -316,7 +368,7 @@ export default function SuppliersAndProductImporterPage() {
                       onClick={() => handleApproveRecommendation(rec)}
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>Approve &amp; Publish Everywhere</span>
+                      <span>Approve &amp; Publish</span>
                     </Button>
                   )}
                 </div>
@@ -326,10 +378,11 @@ export default function SuppliersAndProductImporterPage() {
         </div>
       </GlassCard>
 
+      {/* Section 2: Paste Supplier URL Importer */}
       <GlassCard className="p-6 space-y-4">
         <h2 className="font-mono text-xs font-bold uppercase text-theme-accent flex items-center gap-1.5">
           <PlusCircle className="h-4 w-4" />
-          Paste Supplier URL Importer (DeoDap / Meesho / IndiaMART / Any URL)
+          Paste Supplier URL Importer (DeoDap / Meesho / IndiaMART / Any Viral URL)
         </h2>
 
         <form
@@ -362,7 +415,7 @@ export default function SuppliersAndProductImporterPage() {
           >
             <option value="DESK">O.P.T. // DESK</option>
             <option value="DRIVE">O.P.T. // DRIVE</option>
-            <option value="VAULT">O.P.T. // VAULT</option>
+            <option value="VAULT">O.P.T. // VAULT &amp; VIRAL</option>
           </select>
 
           <div className="sm:col-span-3">
@@ -400,20 +453,26 @@ export default function SuppliersAndProductImporterPage() {
         </form>
       </GlassCard>
 
+      {/* Section 3: Active Catalog, Stock State & Dual-Mode Blog Article Generator */}
       <GlassCard className="p-6 overflow-x-auto">
-        <h2 className="mb-4 font-mono text-xs font-bold uppercase text-theme-accent">
-          Live Catalog &amp; Retention Stock State Manager ({catalogList.length} SKUs)
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-mono text-xs font-bold uppercase text-theme-accent flex items-center gap-1.5">
+            <FileText className="h-4 w-4" />
+            Live Catalog, Stock Retention &amp; 1-Click Blog Article Syndicator ({catalogList.length} SKUs)
+          </h2>
+          <span className="font-mono text-[11px] text-theme-muted">
+            Two-Birds-One-Stone: Copy Mode A for AdSense/Blogger • Copy Mode B for Medium/Quora/Reddit
+          </span>
+        </div>
+
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-theme-border font-mono text-[11px] text-theme-muted">
-              <th className="pb-3 pr-4">SKU</th>
-              <th className="pb-3 pr-4">Product Title</th>
-              <th className="pb-3 pr-4">Division</th>
-              <th className="pb-3 pr-4">Selling Price</th>
-              <th className="pb-3 pr-4">Primary Supplier Cost</th>
-              <th className="pb-3 pr-4">Net Profit</th>
-              <th className="pb-3">Stock &amp; Retention Badge State</th>
+              <th className="pb-3 pr-3">SKU</th>
+              <th className="pb-3 pr-3">Product Title</th>
+              <th className="pb-3 pr-3">Price / Margin</th>
+              <th className="pb-3 pr-3">Stock &amp; Retention State</th>
+              <th className="pb-3">1-Click External Blog &amp; SEO Drafts</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-theme-border">
@@ -426,17 +485,17 @@ export default function SuppliersAndProductImporterPage() {
 
               return (
                 <tr key={prod.sku}>
-                  <td className="py-3 pr-4 font-mono font-bold text-theme-accent">
+                  <td className="py-3 pr-3 font-mono font-bold text-theme-accent">
                     {prod.sku}
                   </td>
-                  <td className="py-3 pr-4 font-medium text-theme-text">{prod.title}</td>
-                  <td className="py-3 pr-4 font-mono">{prod.division}</td>
-                  <td className="py-3 pr-4 font-mono font-bold">₹{prod.price}</td>
-                  <td className="py-3 pr-4 font-mono text-theme-muted">₹{cost}</td>
-                  <td className="py-3 pr-4 font-mono font-bold text-emerald-400">
-                    +₹{margin.estimatedMarginInr} ({margin.marginPercentage}%)
+                  <td className="py-3 pr-3 font-medium text-theme-text">{prod.title}</td>
+                  <td className="py-3 pr-3 font-mono">
+                    <span className="font-bold text-theme-text">₹{prod.price}</span>{' '}
+                    <span className="text-emerald-400 font-bold">
+                      (+₹{margin.estimatedMarginInr})
+                    </span>
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 pr-3">
                     <select
                       value={prod.stockStatus}
                       onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
@@ -445,13 +504,52 @@ export default function SuppliersAndProductImporterPage() {
                           e.target.value as StockRetentionStatus
                         )
                       }
-                      className="rounded border border-theme-border bg-black/60 px-2.5 py-1 font-mono text-[11px] text-theme-text"
+                      className="rounded border border-theme-border bg-black/60 px-2 py-1 font-mono text-[11px] text-theme-text"
                     >
-                      <option value="IN_STOCK">IN_STOCK (Ready)</option>
-                      <option value="LOW_STOCK">LOW_STOCK (Urgency Badge)</option>
-                      <option value="RESTOCKING_SOON">RESTOCKING_SOON (Waitlist Open)</option>
-                      <option value="OUT_OF_STOCK">OUT_OF_STOCK (Stock Out Icon)</option>
+                      <option value="IN_STOCK">IN_STOCK</option>
+                      <option value="LOW_STOCK">LOW_STOCK</option>
+                      <option value="RESTOCKING_SOON">RESTOCKING_SOON</option>
+                      <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
                     </select>
+                  </td>
+                  <td className="py-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyArticleDraft(prod, 'DIRECT_ADSENSE')}
+                        className="inline-flex items-center gap-1 rounded border border-theme-accent/40 bg-theme-accent/10 px-2 py-1 font-mono text-[10px] font-bold text-theme-accent hover:bg-theme-accent/20"
+                      >
+                        {copiedArticleKey === `${prod.sku}-DIRECT_ADSENSE` ? (
+                          <>
+                            <Check className="h-3 w-3 text-emerald-400" />
+                            <span>Copied Blogger Draft!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" />
+                            <span>Mode A: AdSense/Blogger</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyArticleDraft(prod, 'SUBTLE_TROJAN')}
+                        className="inline-flex items-center gap-1 rounded border border-theme-border bg-white/5 px-2 py-1 font-mono text-[10px] text-theme-muted hover:border-theme-accent hover:text-theme-text"
+                      >
+                        {copiedArticleKey === `${prod.sku}-SUBTLE_TROJAN` ? (
+                          <>
+                            <Check className="h-3 w-3 text-emerald-400" />
+                            <span>Copied Subtle SEO!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" />
+                            <span>Mode B: Subtle (Medium/Quora)</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

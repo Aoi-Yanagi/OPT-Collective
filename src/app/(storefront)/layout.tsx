@@ -1,12 +1,8 @@
 import React from 'react';
 import { StorefrontShell } from '@/features/catalog/StorefrontShell';
-import { WelcomeScreen } from '@/components/ui/WelcomeCurtain';
+import { WelcomeScreen } from '@/components/ui/WelcomeScreen';
 
-export default function StorefrontLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function StorefrontLayout({ children }: { children: React.ReactNode }) {
   return (
     <StorefrontShell>
       <WelcomeScreen />

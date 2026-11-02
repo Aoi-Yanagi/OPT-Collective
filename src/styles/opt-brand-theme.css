@@ -1,0 +1,153 @@
+
+/* --------------------------------------------------------------------------
+   O.P.T. COLLECTIVE — KINETIC ATELIER SYSTEM
+   These tokens are updated by ThemeContext; the values below are safe SSR
+   fallbacks that match the signature Evergreen / Obsidian palette.
+   -------------------------------------------------------------------------- */
+:root {
+  --opt-ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+  --opt-ease-shutter: cubic-bezier(0.85, 0, 0.15, 1);
+  --opt-shadow-soft: 0 18px 55px rgba(0, 0, 0, 0.16);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 7rem;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  background-image:
+    radial-gradient(ellipse at 52% -12%, var(--glow-ambient), transparent 54%),
+    linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-canvas) 92%, var(--accent-primary) 8%));
+  transition: background-color 420ms var(--opt-ease-emphasized), color 320ms ease;
+}
+
+::selection {
+  color: var(--accent-primary-fg);
+  background: var(--accent-primary);
+}
+
+.opt-global-nav {
+  background: color-mix(in srgb, var(--bg-canvas) 88%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+}
+
+.opt-drawer,
+.opt-dialog-panel {
+  background:
+    radial-gradient(ellipse at 100% 0%, var(--glow-ambient), transparent 46%),
+    var(--bg-canvas);
+}
+
+.opt-dialog-panel {
+  isolation: isolate;
+}
+
+.opt-admin-shell {
+  background:
+    radial-gradient(ellipse at 75% -12%, var(--glow-ambient), transparent 42%),
+    var(--bg-canvas);
+}
+
+.opt-admin-sidebar {
+  background: color-mix(in srgb, var(--bg-canvas) 94%, var(--bg-matte));
+}
+
+.opt-admin-topbar {
+  background: color-mix(in srgb, var(--bg-canvas) 86%, transparent);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+}
+
+.opt-admin-input {
+  background: color-mix(in srgb, var(--bg-matte) 78%, transparent);
+}
+
+.opt-admin-mobile-nav {
+  background: color-mix(in srgb, var(--bg-canvas) 94%, var(--bg-matte));
+}
+
+.opt-welcome {
+  color: #f6f7f3;
+  background:
+    radial-gradient(ellipse at 50% 46%, color-mix(in srgb, var(--accent-primary) 10%, transparent), transparent 54%),
+    #0d1210;
+}
+
+.opt-welcome-grain {
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+
+.opt-welcome-mark-frame {
+  background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.025));
+  box-shadow: 0 28px 100px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.opt-mood-button {
+  background: color-mix(in srgb, var(--bg-surface) 74%, transparent);
+}
+
+.opt-palette-preview {
+  isolation: isolate;
+}
+
+.opt-primary-cta {
+  color: var(--accent-primary-fg);
+  background: var(--accent-primary);
+  box-shadow: 0 8px 28px var(--glow-ambient);
+  transition: transform 220ms var(--opt-ease-emphasized), box-shadow 220ms var(--opt-ease-emphasized), filter 220ms ease;
+}
+
+.opt-primary-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px var(--glow-ambient);
+  filter: brightness(1.045);
+}
+
+.opt-secondary-cta {
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.opt-secondary-cta:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-elevated);
+  transform: translateY(-1px);
+}
+
+@media (hover: none) {
+  .opt-primary-cta:hover,
+  .opt-secondary-cta:hover {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  body { transition: none; }
+  .opt-primary-cta,
+  .opt-secondary-cta,
+  .opt-mood-button { transition: none !important; }
+}
+
+/* Signature palette is also the no-JavaScript / first-paint fallback. */
+html[data-theme="opt-parent"] {
+  --bg-canvas: #0D1210;
+  --bg-matte: #141C18;
+  --bg-surface: #141C18;
+  --bg-elevated: #202B25;
+  --text-primary: #F1F3EF;
+  --text-secondary: #A6B1A9;
+  --accent-primary: #91D0AE;
+  --accent-primary-fg: #132018;
+  --accent-secondary: #B3C78A;
+  --border-subtle: rgba(230, 242, 235, 0.12);
+  --glow-ambient: rgba(145, 208, 174, 0.18);
+}

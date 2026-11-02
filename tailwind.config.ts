@@ -7,6 +7,7 @@ const config: Config = {
       colors: {
         theme: {
           canvas: 'var(--bg-canvas)',
+          matte: 'var(--bg-matte)',
           surface: 'var(--bg-surface)',
           elevated: 'var(--bg-elevated)',
           text: 'var(--text-primary)',
