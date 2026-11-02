@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "02:30"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 5
+    labels:
+      - "security-protocol"
+      - "automated-audit"
+    groups:
+      safe-security-patches:
+        applies-to: security-updates
+        update-types:
+          - "patch"
+          - "minor"
+        patterns:
+          - "*"
+    ignore:
+      # Never auto-bump major breaking versions without manual architectural review
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Keep Tailwind pinned to v3.4.x so custom CSS design tokens never break
+      - dependency-name: "tailwindcss"
+        versions: [">=4.0.0"]

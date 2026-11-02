@@ -1,0 +1,44 @@
+name: O.P.T. Non-Breaking Security & Build Protocol
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  verify-and-protect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Clean Install Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Gate 1 — High & Critical Security Vulnerability Audit
+        run: npm audit --audit-level=high
+
+      - name: Gate 2 — Strict TypeScript Compiler Verification (Zero Breakage Check)
+        run: npx tsc --noEmit
+
+      - name: Gate 3 — Next.js Production Build Verification
+        run: npm run build
+
+      - name: Gate 4 — Safe Auto-Merge for Verified Dependabot Patch/Minor PRs
+        if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
