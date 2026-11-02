@@ -10,7 +10,7 @@
     "security:audit": "npm audit --audit-level=high"
   },
   "dependencies": {
-    "@gsap/react": "^2.1.1",
+    "@gsap/react": "^2.1.2",
     "audit": "^0.0.6",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
