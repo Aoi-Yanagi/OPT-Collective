@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ShoppingBag, ShieldCheck, Search } from 'lucide-react';
 import { useOptTheme } from '@/features/theme-engine/ThemeContext';
@@ -31,6 +32,26 @@ const PILL_TRANSITION = {
   mass: 0.72,
 };
 
+function normalizePath(pathname: string): string {
+  if (!pathname) return '/';
+  const normalized = pathname.replace(/\/+$/, '');
+  return normalized || '/';
+}
+
+function getDivisionFromPath(pathname: string): DivisionKey | null {
+  const normalizedPath = normalizePath(pathname);
+  if (normalizedPath === '/') return 'ALL';
+
+  const match = normalizedPath.match(/^\/category\/(desk|drive|vault)$/i);
+  if (!match) return null;
+
+  return match[1].toUpperCase() as DivisionKey;
+}
+
+function isCollectionPath(pathname: string): boolean {
+  return getDivisionFromPath(pathname) !== null;
+}
+
 function CollectionLink({
   item,
   active,
@@ -41,13 +62,13 @@ function CollectionLink({
   item: (typeof NAV_ITEMS)[number];
   active: boolean;
   layoutId: string;
-  onSelect: (division: DivisionKey) => void;
+  onSelect: (item: (typeof NAV_ITEMS)[number], event: React.MouseEvent<HTMLAnchorElement>) => void;
   compact?: boolean;
 }) {
   return (
     <Link
       href={item.href}
-      onClick={() => onSelect(item.division)}
+      onClick={(event) => onSelect(item, event)}
       aria-current={active ? 'page' : undefined}
       className={`relative isolate inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-full font-medium transition-colors duration-200 ${
         compact ? 'px-3 py-1.5 text-[10px]' : 'px-3.5 py-2 text-[10px]'
@@ -67,14 +88,88 @@ function CollectionLink({
 }
 
 export function Navbar({ cartCount, onOpenCart, device }: NavbarProps) {
-  const { activeDivision, selectDivisionWithTheme } = useOptTheme();
+  const pathname = usePathname() || '/';
+  const router = useRouter();
+  const { activeDivision: contextDivision, selectDivisionWithTheme } = useOptTheme();
+
+  // Keep an explicit browser-location snapshot as well as Next's pathname.
+  // Next handles App Router transitions; popstate covers native browser Back/Forward.
+  const [observedPathname, setObservedPathname] = useState<string>(pathname);
+  const selectDivisionRef = useRef(selectDivisionWithTheme);
+  selectDivisionRef.current = selectDivisionWithTheme;
+
+  useEffect(() => {
+    const nextPath = normalizePath(pathname);
+    setObservedPathname(nextPath);
+    const division = getDivisionFromPath(nextPath);
+    if (division !== null) selectDivisionRef.current(division);
+  }, [pathname]);
+
+  useEffect(() => {
+    const syncFromBrowserLocation = (): void => {
+      const nextPath = normalizePath(window.location.pathname);
+      setObservedPathname(nextPath);
+
+      // Explicitly reset the theme context on popstate. The URL remains the
+      // authority for the pill, while the context is synchronized for pages
+      // and category-aware theme behaviour.
+      const division = getDivisionFromPath(nextPath);
+      if (division !== null) selectDivisionRef.current(division);
+    };
+
+    window.addEventListener('popstate', syncFromBrowserLocation);
+    window.addEventListener('pageshow', syncFromBrowserLocation);
+    return () => {
+      window.removeEventListener('popstate', syncFromBrowserLocation);
+      window.removeEventListener('pageshow', syncFromBrowserLocation);
+    };
+  }, []);
+
+  // For collection routes, derive the indicator directly from location. This
+  // avoids stale context state keeping Desk/Drive/Vault selected after Back.
+  const routeDivision = getDivisionFromPath(observedPathname);
+  const activeDivision = routeDivision ?? contextDivision;
+
+  function handleCollectionSelect(
+    item: (typeof NAV_ITEMS)[number],
+    event: React.MouseEvent<HTMLAnchorElement>
+  ): void {
+    event.preventDefault();
+
+    const currentPath = normalizePath(window.location.pathname || observedPathname);
+    if (currentPath === item.href) {
+      // Reconcile context even when the URL is already correct.
+      setObservedPathname(item.href);
+      selectDivisionWithTheme(item.division);
+      return;
+    }
+
+    selectDivisionWithTheme(item.division);
+    setObservedPathname(item.href);
+
+    // One collection-history slot is kept after Discover:
+    //   / -> first collection: push
+    //   collection -> another collection: replace
+    // Therefore one browser Back returns to / regardless of how many tabs
+    // were visited. Navigations from product/checkout/tracking still push.
+    if (isCollectionPath(currentPath)) {
+      if (currentPath === '/') {
+        router.push(item.href, { scroll: false });
+      } else {
+        router.replace(item.href, { scroll: false });
+      }
+      return;
+    }
+
+    router.push(item.href, { scroll: false });
+  }
 
   return (
     <header className="opt-global-nav sticky top-0 z-40 isolate border-b border-theme-border">
       <div className="mx-auto flex min-h-[68px] max-w-[1480px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          onClick={() => selectDivisionWithTheme('ALL')}
+          onClick={(event) => handleCollectionSelect(NAV_ITEMS[0], event)}
           aria-label="The O.P.T. Collective home"
           className="group flex min-w-0 shrink-0 items-center gap-2.5"
         >
@@ -92,7 +187,7 @@ export function Navbar({ cartCount, onOpenCart, device }: NavbarProps) {
               item={item}
               active={activeDivision === item.division}
               layoutId="opt-collection-pill-desktop"
-              onSelect={selectDivisionWithTheme}
+              onSelect={handleCollectionSelect}
             />
           ))}
         </nav>
@@ -133,7 +228,7 @@ export function Navbar({ cartCount, onOpenCart, device }: NavbarProps) {
               item={item}
               active={activeDivision === item.division}
               layoutId="opt-collection-pill-mobile"
-              onSelect={selectDivisionWithTheme}
+              onSelect={handleCollectionSelect}
               compact
             />
           ))}
